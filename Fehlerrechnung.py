@@ -1,42 +1,148 @@
-# =================================================================================================
-# INFORMATION FOR END USERS 
-# =================================================================================================
-# Classes and functions that are relevant for you
-# -----------------------------------------------
-# Classes:
-#   - Value
-#   - Measurement
-# 
-# Math functions (all trigonometric functions currently only support arguments of radians):
-#   - exp
-#   - log
-#   - sin
-#   - cos
-#   - tan
-#   - arcsin
-#   - arccos
-#   - arctan
-# 
-# Enums:
-#   - Print_mode
-#   - Precision_mode
-#   - Trigonometry_mode
-#   - Propagation_mode
-#
-# Example Code:
-# >>> # creating statistics to a set of measurements, the supplied data is scaled by the Pre-factor `PF.m` same as `exp=-3`
-# >>> length = Measurement( [1.249, 1.234, 1.252, 1.238, 1.235, 1.246, 1.262, 1.255, 1.243], PF.m, id='d' ) # data is in millimeter
-# 
-# >>> # defining 
-# >>> a = Value( '1.630' , '0.021' , prec=2, id='a' )
-# >>> b = Value( '0.6649', '0.0040', prec=3, id='b' )
-# >>> x = Value( '1.376' , '0.037' , prec=2, id='x' )
-# >>> 
-# >>> # examples displaying the syntax of different calculations
-# >>> y1 = 13*a*x + 14*a*b*x**2 + 21*a*b**3
-# >>> y2 = exp( ( a - x ) / x )
-# >>> y3 = b * sin( a * x )
-# >>> y4 = ( x - a ) / ( x + b )
+"""
+# Error-Propagation
+
+This Scripts is capable of calculating the *Gaussian Error Propagation* and create simple statistics for datasets.
+
+This was created out of the frustration with the module *Fehlerrechnung* (engl. Error-Propagation) at my university and the ability to reliably cross check my results.
+
+### INFORMATION FOR END USERS 
+
+Following classes and functions that are relevant for you:
+
+- ### Classes
+  - ### Value
+    - ```py
+        Value( best_value: number_as_str|number, error: number_as_str|number [, scale_exponent: int=0 [, precision: int=2 [, id:str ]]] )
+        ```
+    -   | operation        | symbol | example              |
+        | ---------------- |--------| -------------------- |
+        | negate           | `-`    | `-a`                 |
+        | positive         | `+`    | `+a`                 |
+        | addition         | `+`    | `a+b` `1+a` `a+1`    |
+        | subtraction      | `-`    | `a-b` `2-a` `a-2`    |
+        | multiplication   | `*`    | `a*b` `3*a` `a*3`    |
+        | division         | `/`    | `a/b` `4/a` `a/4`    |
+        | exponentiation   | `**`   | `a**b` `5**a` `a**5` |
+        | Compare Equal    | `==`   | `a==b` `6==a` `a==6` |
+        | Compare Unequal  | `!=`   | `a!=b` `7!=a` `a!=7` |
+
+
+  - ### Measurement
+    - ```py
+      Measurement( data: Sequence_of_numbers[, scale_exponent: int=0[, precision: int=2 [, id:str ]]])
+      ```
+
+  - ### PF [optional for advanced use]
+    Converting data from one *unit-scale* to an other specific *unit-scale*.
+
+    *PF* employs *Decimal-Prefixes* or *Pre-factors* to denote the magnitude or scale of units( i.e *kilometers* (*km*), *microfarads* (*µF*) etc ).
+    
+    example:
+    ```py
+    >>> # creating a mass `Value` in units of milligram that are converted to kilograms
+    >>> Value( '100', '3.5', exp=PF.m.to(PF.k) )
+    (100 ± 3.5)e-6    δe= 0.035
+    
+    >>> # creating a distance `Value` in units of kilometers that are converted to meters
+    >>> Value( '3.21', '0.11', exp=PF.k.to(PF.NONE) )
+    (3.21 ± 0.11)e+3    δe= 0.034
+    ```
+
+    - predefined class-variables
+
+        | name    | alias | factor |
+        | ------- | ----- | ------ |
+        | `PETA`  | `P`   | `E+15` |
+        | `TERA`  | `T`   | `E+12` |
+        | `GIGA`  | `G`   | `E+9 ` |
+        | `MEGA`  | `M`   | `E+6 ` |
+        | `KILO`  | `k`   | `E+3 ` |
+        | `HECTO` | `h`   | `E+2 ` |
+        | `DEKA`  | `da`  | `E+1 ` |
+        | `NONE`  | `_`   | `1   ` |
+        | `DEZI`  | `d`   | `E-1 ` |
+        | `CENTI` | `c`   | `E-2 ` |
+        | `MILLI` | `m`   | `E-3 ` |
+        | `MU`    | `µ`   | `E-6 ` |
+        | `NANO`  | `n`   | `E-9 ` |
+        | `PIKO`  | `p`   | `E-12` |
+        | `FEMTO` | `f`   | `E-15` |
+
+- ### Math functions 
+(all trigonometric functions currently only support arguments in `radians`)
+
+argument `x` is of type ` Value | number_as_st | number`. All following functions return a `Value`
+
+  - `exp( x )`
+  - `log( argument [, base:x defaults to Euler-e ] )`
+  - `sin( x )`
+  - `cos( x )`
+  - `tan( x )`
+  - `arcsin( x )`
+  - `arccos( x )`
+  - `arctan( x )`
+  - `sinh( x )`
+  - `cosh( x )`
+  - `tanh( x )`
+  - `arsinh( x )`
+  - `arcosh( x )`
+  - `artanh( x )`
+
+### Example Code
+```py
+>>> # creating statistics to a set of measurements, the supplied data is scaled by the Pre-factor `PF.m` same as `exp=-3`
+>>> length = Measurement( [1.249, 1.234, 1.252, 1.238, 1.235, 1.246, 1.262, 1.255, 1.243], PF.m, id='d' ) # data is in millimeter
+Measurement:
++----------------------------------------------------+
+|         N:              9                          |
+| Spanwidth:        0.028 * 10^-3                    |
+| -------------------------------------------------- |
+|   Average:       (1246 ± 3.2)e-6       δe= 0.0025  |
+|    Median:        (1.2 ± 0)e-3         δe= 0E+27   |
+| -------------------------------------------------- |
+|        σ²:        (80 ± 4.4)e-9        δe= 0.056   |
+|         σ:       (8.9 ± 2.1)e-6        δe= 0.24    |
+|        s²:        (90 ± 5.6)e-9        δe= 0.062   |
+|         s:       (9.5 ± 2.4)e-6        δe= 0.25    |
++----------------------------------------------------+
+
+>>> # defining erroneous values
+>>> # id is optional and does not alter results of your calculations
+>>> # it is mainly there to be a placeholder in the .print_info_equation() output (example is below)
+>>> a = Value( '1.630' , '0.021' , prec=2, id='a' )
+>>> b = Value( '0.6649', '0.0040', prec=3, id='b' )
+>>> x = Value( '1.376' , '0.037' , prec=2, id='x' )
+
+>>> a.v # alias for a.value
+1.63
+
+>>> a.error # alias for a.e
+0.021
+
+>>> a.re # alias for a.relative_error
+0.013
+
+>>> # examples displaying the syntax of different calculations
+>>> y1 = 13*a*x + 14*a*b*x**2 + 21*a*b**3
+67.947 ± 2.513    δe= 0.03699
+
+>>> y2 = exp( ( a - x ) / x )
+(1202.73 ± 42.48)e-3    δe= 0.03532
+
+>>> y3 = b * sin( a * x )
+(520.3 ± 27.86)e-3    δe= 0.05355
+
+>>> y4 = ( x - a ) / ( x + b )
+(-124.45 ± 22.84)e-3    δe= 0.1835
+
+>>> y1.print_info_equation()
+Equation   : b**3 * a * 21 + x * a * 13 + x**2 * b * a * 14
+Derivatives:
+        x:      a * 13 + b * a * x * 28
+        b:      a * b**2 * 63 + x**2 * a * 14
+        a:      b**3 * 21 + x * 13 + x**2 * b * 14
+```
+"""
 
 
 
@@ -129,18 +235,18 @@ class Propagation_mode(Enum):
 
 class PF():
     """
-    Pre-factors that are used to annotate the magnitude of units
-    
-    use case:
-    - creating a `Value` with arguments measured in a specific unit but should be calculated with and returned in SI units
+    Converting data from one *unit-scale* to an other specific *unit-scale*.
+
+    *PF* employs *Decimal-Prefixes* or *Pre-factors* to denote the magnitude or scale of units( i.e *kilometers* (*km*), *microfarads* (*µF*) etc ).
     
     example:
-    
     >>> # creating a mass `Value` in units of milligram that are converted to kilograms
-    >>> mass = Value( '100', '3.5', exp=PF.m.to(PF.k) )
+    >>> Value( '100', '3.5', exp=PF.m.to(PF.k) )
+    (100 ± 3.5)e-6    δe= 0.035
     
     >>> # creating a distance `Value` in units of kilometers that are converted to meters
-    >>> length = Value( '3.21', '0.11', exp=PF.k.to(PF.NONE) )
+    >>> Value( '3.21', '0.11', exp=PF.k.to(PF.NONE) )
+    (3.21 ± 0.11)e+3    δe= 0.034
     """
     
     # cspell: ignore PETA GIGA HECTO DEKA DEZI CENTI MILLI PIKO FEMTO
@@ -1699,6 +1805,122 @@ def arctan( _x:Value|Decimal|int|float|str, / ) -> Value:
             raise _type_error_input(_x)
 
 
+def sinh( _x:Value|Decimal|int|float|str, / ) -> Value:
+    match _x:
+        case Value():
+            vars, _x_expression = _x._operation_setup( _x )
+
+            return Value._init_by_expression(
+                    Sinh( _x_expression ),
+                    vars
+                )
+        
+        case Decimal() | int() | float() | str():
+            return Value._init_by_expression(
+                    Sinh( Singleton(_x) ),
+                    {}
+                )
+        
+        case _:
+            raise _type_error_input(_x)
+
+def cosh( _x:Value|Decimal|int|float|str, / ) -> Value:
+    match _x:
+        case Value():
+            vars, _x_expression = _x._operation_setup( _x )
+
+            return Value._init_by_expression(
+                    Cosh( _x_expression ),
+                    vars
+                )
+        
+        case Decimal() | int() | float() | str():
+            return Value._init_by_expression(
+                    Cosh( Singleton(_x) ),
+                    {}
+                )
+        
+        case _:
+            raise _type_error_input(_x)
+
+def tanh( _x:Value|Decimal|int|float|str, / ) -> Value:
+    match _x:
+        case Value():
+            vars, _x_expression = _x._operation_setup( _x )
+
+            return Value._init_by_expression(
+                    Tanh( _x_expression ),
+                    vars
+                )
+        
+        case Decimal() | int() | float() | str():
+            return Value._init_by_expression(
+                    Tanh( Singleton(_x) ),
+                    {}
+                )
+        
+        case _:
+            raise _type_error_input(_x)
+
+
+def arsinh( _x:Value|Decimal|int|float|str, / ) -> Value:
+    match _x:
+        case Value():
+            vars, _x_expression = _x._operation_setup( _x )
+
+            return Value._init_by_expression(
+                    Arsinh( _x_expression ),
+                    vars
+                )
+        
+        case Decimal() | int() | float() | str():
+            return Value._init_by_expression(
+                    Arsinh( Singleton(_x) ),
+                    {}
+                )
+        
+        case _:
+            raise _type_error_input(_x)
+
+def arcosh( _x:Value|Decimal|int|float|str, / ) -> Value:
+    match _x:
+        case Value():
+            vars, _x_expression = _x._operation_setup( _x )
+
+            return Value._init_by_expression(
+                    Arcosh( _x_expression ),
+                    vars
+                )
+        
+        case Decimal() | int() | float() | str():
+            return Value._init_by_expression(
+                    Arcosh( Singleton(_x) ),
+                    {}
+                )
+        
+        case _:
+            raise _type_error_input(_x)
+
+def artanh( _x:Value|Decimal|int|float|str, / ) -> Value:
+    match _x:
+        case Value():
+            vars, _x_expression = _x._operation_setup( _x )
+
+            return Value._init_by_expression(
+                    Artanh( _x_expression ),
+                    vars
+                )
+        
+        case Decimal() | int() | float() | str():
+            return Value._init_by_expression(
+                    Artanh( Singleton(_x) ),
+                    {}
+                )
+        
+        case _:
+            raise _type_error_input(_x)
+
+
 class Value():
     PRINT_MODE      : Print_mode        = Print_mode.DEFAULT
     PREC_MODE       : Precision_mode    = Precision_mode.DEFAULT
@@ -2171,73 +2393,75 @@ class Measurement():
 
 if __name__ == '__main__':
     # Übung 6 
-    PREC = 4
-    a = Value( '1.630' , '0.021' , prec=PREC, id='a' )
-    b = Value( '0.6649', '0.0040', prec=PREC, id='b' )
-    x = Value( '1.376' , '0.037' , prec=PREC, id='x' )
+    # PREC = 2
+    # a = Value( '1.630' , '0.021' , prec=PREC, id='a' )
+    # b = Value( '0.6649', '0.0040', prec=PREC, id='b' )
+    # x = Value( '1.376' , '0.037' , prec=PREC, id='x' )
     
-    print( f"a = {a}" )
-    print( f"b = {b}" )
-    print( f"x = {x}" )
+    # print(a.e, a.re)
     
-    y1 = 13*a*x + 14*a*b*x**2 + 21*a*b**3
-    y2 = exp( ( a - x ) / x )
-    y3 = b * sin( a * x )
-    y4 = ( x - a ) / ( x + b )
+    # print( f"a = {a}" )
+    # print( f"b = {b}" )
+    # print( f"x = {x}" )
+    
+    # y1 = 13*a*x + 14*a*b*x**2 + 21*a*b**3
+    # y2 = exp( ( a - x ) / x )
+    # y3 = b * sin( a * x )
+    # y4 = ( x - a ) / ( x + b )
 
-    print( y1 )
-    print( y2 )
-    print( y3 )
-    print( y4 )
+    # print( y1 )
+    # print( y2 )
+    # print( y3 )
+    # print( y4 )
     
-    y1.print_info_equation()
-    y2.print_info_equation()
-    y3.print_info_equation()
-    y4.print_info_equation()
-    
-    
-    
-    # Übung 6
-    P = 2
-    
-    m_sm   = Value( 30.9829, 0.0092, id='m_sm  ', exp=PF.m.to(PF.k), prec=P )                      #       mg -> kg
-    m_so   = Value( 6.8245 , 0.0035, id='m_so  ', exp=PF.m.to(PF.k), prec=P )                      #       mg -> kg
-    H      = Value( 33.75  , 0.37  , id='H     ', exp=PF.c, prec=P )                               #       cm -> m
-    t      = Value( 76.34  , 0.74  , id='t     ', exp=PF.NONE, prec=P )                            #      sec -> sec
-    rho_fl = Value( 0.962  , 0.000 , id='rho_fl', exp=(PF._/PF.c**3).to(PF.k/PF._**3), prec=P )    # g / cm^3 -> kg / m^3
-    
-    d = Measurement( [1.249, 1.234, 1.252, 1.238, 1.235, 1.246, 1.262, 1.255, 1.243], PF.m, P, id='d' )
+    # y1.print_info_equation()
+    # y2.print_info_equation()
+    # y3.print_info_equation()
+    # y4.print_info_equation()
     
     
-    m_7k = m_sm - m_so
-    m_k  = m_7k / 7
     
-    r_k = d.average / 2
+    # # Übung 6
+    # P = 2
     
-    V_k = 4/3 * math.pi * r_k**3
+    # m_sm   = Value( 30.9829, 0.0092, id='m_sm  ', exp=PF.m.to(PF.k), prec=P )                      #       mg -> kg
+    # m_so   = Value( 6.8245 , 0.0035, id='m_so  ', exp=PF.m.to(PF.k), prec=P )                      #       mg -> kg
+    # H      = Value( 33.75  , 0.37  , id='H     ', exp=PF.c, prec=P )                               #       cm -> m
+    # t      = Value( 76.34  , 0.74  , id='t     ', exp=PF.NONE, prec=P )                            #      sec -> sec
+    # rho_fl = Value( 0.962  , 0.000 , id='rho_fl', exp=(PF._/PF.c**3).to(PF.k/PF._**3), prec=P )    # g / cm^3 -> kg / m^3
     
-    rho_k = m_k / V_k
+    # d = Measurement( [1.249, 1.234, 1.252, 1.238, 1.235, 1.246, 1.262, 1.255, 1.243], PF.m, P, id='d' )
     
-    rho_d = rho_k-rho_fl
     
-    nu = 2/9 * 9.810 * rho_d * r_k**2 * t / H
+    # m_7k = m_sm - m_so
+    # m_k  = m_7k / 7
     
-    print( f"m_sm   = {m_sm  }" )
-    print( f"m_so   = {m_so  }" )
-    print( f"H      = {H     }" )
-    print( f"t      = {t     }" )
-    print( f"rho_fl = {rho_fl}" )
-    print( f"d      = {d.average}" )
-    print()
-    print( f"Measurement:\n{d}" )
-    print()
-    print( f"m_7k  = {m_7k }" )
-    print( f"m_k   = {m_k  }" )
-    print( f"r_k   = {r_k  }" )
-    print( f"V_k   = {V_k  }" )
-    print( f"rho_k = {rho_k}" )
-    print( f"rho_d = {rho_d}" )
-    print( f"nu    = {nu   }" )
-    print()
+    # r_k = d.average / 2
     
-    nu.print_info_equation()
+    # V_k = 4/3 * math.pi * r_k**3
+    
+    # rho_k = m_k / V_k
+    
+    # rho_d = rho_k-rho_fl
+    
+    # nu = 2/9 * 9.810 * rho_d * r_k**2 * t / H
+    
+    # print( f"m_sm   = {m_sm  }" )
+    # print( f"m_so   = {m_so  }" )
+    # print( f"H      = {H     }" )
+    # print( f"t      = {t     }" )
+    # print( f"rho_fl = {rho_fl}" )
+    # print( f"d      = {d.average}" )
+    # print()
+    # print( f"Measurement:\n{d}" )
+    # print()
+    # print( f"m_7k  = {m_7k }" )
+    # print( f"m_k   = {m_k  }" )
+    # print( f"r_k   = {r_k  }" )
+    # print( f"V_k   = {V_k  }" )
+    # print( f"rho_k = {rho_k}" )
+    # print( f"rho_d = {rho_d}" )
+    # print( f"nu    = {nu   }" )
+    # print()
+    
+    # nu.print_info_equation()
