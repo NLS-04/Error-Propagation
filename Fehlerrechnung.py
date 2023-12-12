@@ -1993,9 +1993,9 @@ class Value():
         r = Expression.STR_FLOAT_ROUND
         Expression.STR_FLOAT_ROUND = round_decimals_to
         
-        print( "Equation   :", str(self._expression) )
+        print( "Equation   : q = ", str(self._expression) )
         print( "Derivatives:" )
-        print( *[f"\t{var.get_id()}:\t{str(self._expression.differentiate(var))}" for var in self._variables], sep='\n', end='\n\n' )
+        print( *[f"\t∂q/∂{var.get_id()}:\t{str(self._expression.differentiate(var))}" for var in self._variables], sep='\n', end='\n\n' )
 
         Expression.STR_FLOAT_ROUND = r
     
@@ -2009,6 +2009,20 @@ class Value():
             case _:
                 raise TypeError()
     
+    @classmethod
+    def weighted_average( cls, *values:Sequence[Value] ) -> Value:
+        assert all( map( lambda v: isinstance(v, Value), values ) ), TypeError("All arguments must be of type Value")
+        
+        prec_list = map(lambda var: var.__prec, values)
+        prec      = max( prec_list ) if Value.PREC_MODE == Precision_mode.TOWARDS_MAX else min( prec_list )
+        
+        sum_weights = sum( map( lambda v: v.error**Decimal('-2'), values ) ) # weights are in this case same as 1/(value.error)**2
+        
+        return Value(
+            sum(map( lambda v: v.value * v.error**Decimal('-2'), values )) / sum_weights,
+            sum_weights ** Decimal('-0.5'),
+            prec=prec
+        )
     
     #----------------------------------------------------------------------------------------------
     # private calculation stuff
@@ -2147,7 +2161,7 @@ class Value():
         return vars, _o_expression
     
     #----------------------------------------------------------------------------------------------
-    # calculation stuff
+    # calculation dunder functions
     #----------------------------------------------------------------------------------------------
     def __eq__(self, _o:Value|Any) -> bool:
         return self.__hash__() == hash(_o)
@@ -2367,24 +2381,138 @@ class Measurement():
         print_mode = Value.PRINT_MODE
         Value.PRINT_MODE = Print_mode.NO_RELATIVE_ERROR
         
-        
         fmt = "| {:>9s}: {:^%ds} {:<11s} |" % (width - 9 - 2 - 1 - 11)
         fmt_value = lambda name, value: fmt.format( name, str(value), value.str_relative_error() )
         
+        bound_top_bottom = "+-" + '-'*width + "-+"
+        h_line           = '| ' + '-'*width + ' |'
+        
         s = '\n'.join( [
-            "+-" + '-'*width + "-+",
+            bound_top_bottom,
+            
             fmt.format( 'N', str(self.N), '' ),
             fmt.format( 'Spanwidth', str(round(self.spanwidth / self.exp.factor, 10)) +' * '+ str(self.exp), '' ),
-            '| ' + '-'*width + ' |',
+            
+            h_line,
+            
             fmt_value( 'Average', self.average ),
             fmt_value( 'Median' , self.median  ),
-            '| ' + '-'*width + ' |',
+            
+            h_line,
+            
             fmt_value( 'σ²', self.sqr_sigma ),
             fmt_value( 'σ' , self.sigma     ),
             fmt_value( 's²', self.sqr_s     ),
             fmt_value( 's' , self.s         ),
-            "+-" + '-'*width + "-+",
+            
+            bound_top_bottom,
         ] )
+        
+        Value.PRINT_MODE = print_mode
+        
+        return s
+
+class Regression_linear_simple():
+    N: int
+    X: list[ Decimal ]
+    Y: list[ Decimal ]
+    
+    sum_x    : Decimal
+    sum_y    : Decimal
+    sum_x_sqr: Decimal
+    sum_x_y  : Decimal
+    
+    determinate_s: Decimal
+    
+    coef_A: Value
+    coef_B: Value
+    
+    s_sqr  : Decimal
+    
+    def __init__(self, x_data:Sequence[Decimal|int|float|str], y_data:Sequence[Decimal|int|float|str]) -> None:
+        assert all( map( lambda d: isinstance( d, (Decimal, int, float, str)), x_data ) ), TypeError( "Some entries in x_data are not of type (Decimal | int | float | str)" )
+        assert all( map( lambda d: isinstance( d, (Decimal, int, float, str)), y_data ) ), TypeError( "Some entries in y_data are not of type (Decimal | int | float | str)" )
+        assert len(x_data) == len(y_data), ValueError( "Sequences x_data and y_data must be of equal length" )
+        
+        self.X = [ Decimal(d) for d in x_data ]
+        self.Y = [ Decimal(d) for d in y_data ]
+        self.N = len( self.X )
+        
+        self.sum_x     = sum( self.X )
+        self.sum_y     = sum( self.Y )
+        self.sum_x_sqr = sum( map( lambda x: x*x, self.X ) )
+        self.sum_x_y   = sum( map( lambda x,y: x*y, self.X, self.Y ) )
+        
+        self.determinate_s = self.N * self.sum_x_sqr - self.sum_x**2
+        
+        a = ( self.sum_x_sqr*self.sum_y - self.sum_x*self.sum_x_y ) / self.determinate_s
+        b = ( self.N*self.sum_x_y - self.sum_x*self.sum_y ) / self.determinate_s
+        
+        self.s_sqr = sum( map( lambda x, y: (y-a-b*x)**2, self.X, self.Y) ) / (self.N-2)
+        
+        sigma_a = math.sqrt(          self.s_sqr/self.determinate_s * self.sum_x_sqr )
+        sigma_b = math.sqrt( self.N * self.s_sqr/self.determinate_s )
+
+        self.coef_A = Value( a, sigma_a )
+        self.coef_B = Value( b, sigma_b )
+    
+    def __str__(self) -> str:
+        width = 50
+
+        max_name_width = 11
+        
+        print_mode = Value.PRINT_MODE
+        Value.PRINT_MODE = Print_mode.NO_RELATIVE_ERROR
+        
+        fmt = lambda format_type: "| {:>%ds}: {:^%d%s} |" % (max_name_width, width - max_name_width - 2, format_type)
+        fmt_center  = "| {:^%ds} |" % width
+        fmt_decimal = lambda name, value: fmt('f').format( name, float(value) )
+        
+        bound_top_bottom = "+-" + '-'*width + "-+"
+        h_line           = '| ' + '-'*width + ' |'
+        
+        s = '\n'.join( [
+            bound_top_bottom,
+            
+            fmt_center.format( f"Y = ({self.coef_A}) + ({self.coef_B})*X" ),
+            
+            h_line,
+            
+            fmt('d').format( 'N', self.N ),
+            
+            fmt_decimal( "sum X_i"    , self.sum_x    ),
+            fmt_decimal( "sum Y_i"    , self.sum_y    ),
+            fmt_decimal( "sum X_i^2"  , self.sum_x_sqr),
+            fmt_decimal( "sum X_i*Y_i", self.sum_x_y  ),
+            
+            h_line,
+            
+            fmt_decimal( "determinate", self.determinate_s),
+            fmt_decimal( "s²"         , self.s_sqr        ),
+            fmt_decimal( "s"          , self.s_sqr.sqrt() ),
+            
+            bound_top_bottom,
+        ] )
+        
+        s += '\n\n'
+        
+        
+        y_regression = lambda x: self.coef_A.value + self.coef_B.value*x
+        
+        
+        s += f"{'x_i':^4s} | {'y_i':^5s} | {'y':^5s} | {'(y - y_i)**2':s}\n"
+        s += '-'*(4+3+5+3+5+3+12) + '\n'
+        
+        sum_delta = Decimal('0')
+        for x, y in zip(self.X, self.Y):
+            y_of_x = y_regression(x)
+            sum_delta += (y_of_x - y)**2
+            
+            s += f"{x:^.2f} | {y:^.2f} | {y_of_x:^.2f} | {(y_of_x - y)**2:^.2f}\n"
+        
+        s += '-'*(4+3+5+3+5+3+12) + '\n'
+        s += f"sum  (y-y_i)**2: {sum_delta:.2f}"
+        
         
         Value.PRINT_MODE = print_mode
         
@@ -2465,3 +2593,17 @@ if __name__ == '__main__':
     # print()
     
     # nu.print_info_equation()
+    
+    # Übung 8
+    # test data
+    X = [0.20, 1.17, 1.96, 2.98, 4.05, 5.12, 5.93, 7.01, 8.24]
+    Y = [52.4, 54.6, 57.7, 59.5, 62.7, 65.6, 67.0, 69.0, 72.8]
+    
+    # X = [0.16, 1.19, 2.12, 3.11, 4.10, 4.83, 6.12, 7.01, 8.19]
+    # Y = [54.7, 54.8, 57.8, 60.3, 63.1, 63.7, 68.3, 71.0, 72.2]
+    
+    print(Regression_linear_simple(X, Y))
+    
+    
+    
+    pass
