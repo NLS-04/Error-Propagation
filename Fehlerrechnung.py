@@ -1,158 +1,13 @@
 """
-# Error-Propagation
 
-This Scripts is capable of calculating the *Gaussian Error Propagation* and create simple statistics for datasets.
-
-This was created out of the frustration with the module *Fehlerrechnung* (engl. Error-Propagation) at my university and the ability to reliably cross check my results.
-
-### INFORMATION FOR END USERS 
-
-Following classes and functions that are relevant for you:
-
-- ### Classes
-  - ### Value
-    - ```py
-        Value( best_value: number_as_str|number, error: number_as_str|number [, scale_exponent: int=0 [, precision: int=2 [, id:str ]]] )
-        ```
-    -   | operation        | symbol | example              |
-        | ---------------- |--------| -------------------- |
-        | negate           | `-`    | `-a`                 |
-        | positive         | `+`    | `+a`                 |
-        | addition         | `+`    | `a+b` `1+a` `a+1`    |
-        | subtraction      | `-`    | `a-b` `2-a` `a-2`    |
-        | multiplication   | `*`    | `a*b` `3*a` `a*3`    |
-        | division         | `/`    | `a/b` `4/a` `a/4`    |
-        | exponentiation   | `**`   | `a**b` `5**a` `a**5` |
-        | Compare Equal    | `==`   | `a==b` `6==a` `a==6` |
-        | Compare Unequal  | `!=`   | `a!=b` `7!=a` `a!=7` |
-
-
-  - ### Measurement
-    - ```py
-      Measurement( data: Sequence_of_numbers[, scale_exponent: int=0[, precision: int=2 [, id:str ]]])
-      ```
-
-  - ### PF [optional for advanced use]
-    Converting data from one *unit-scale* to an other specific *unit-scale*.
-
-    *PF* employs *Decimal-Prefixes* or *Pre-factors* to denote the magnitude or scale of units( i.e *kilometers* (*km*), *microfarads* (*µF*) etc ).
-    
-    example:
-    ```py
-    >>> # creating a mass `Value` in units of milligram that are converted to kilograms
-    >>> Value( '100', '3.5', exp=PF.m.to(PF.k) )
-    (100 ± 3.5)e-6    δe= 0.035
-    
-    >>> # creating a distance `Value` in units of kilometers that are converted to meters
-    >>> Value( '3.21', '0.11', exp=PF.k.to(PF.NONE) )
-    (3.21 ± 0.11)e+3    δe= 0.034
-    ```
-
-    - predefined class-variables
-
-        | name    | alias | factor |
-        | ------- | ----- | ------ |
-        | `PETA`  | `P`   | `E+15` |
-        | `TERA`  | `T`   | `E+12` |
-        | `GIGA`  | `G`   | `E+9 ` |
-        | `MEGA`  | `M`   | `E+6 ` |
-        | `KILO`  | `k`   | `E+3 ` |
-        | `HECTO` | `h`   | `E+2 ` |
-        | `DEKA`  | `da`  | `E+1 ` |
-        | `NONE`  | `_`   | `1   ` |
-        | `DEZI`  | `d`   | `E-1 ` |
-        | `CENTI` | `c`   | `E-2 ` |
-        | `MILLI` | `m`   | `E-3 ` |
-        | `MU`    | `µ`   | `E-6 ` |
-        | `NANO`  | `n`   | `E-9 ` |
-        | `PIKO`  | `p`   | `E-12` |
-        | `FEMTO` | `f`   | `E-15` |
-
-- ### Math functions 
-(all trigonometric functions currently only support arguments in `radians`)
-
-argument `x` is of type ` Value | number_as_st | number`. All following functions return a `Value`
-
-  - `exp( x )`
-  - `log( argument [, base:x defaults to Euler-e ] )`
-  - `sin( x )`
-  - `cos( x )`
-  - `tan( x )`
-  - `arcsin( x )`
-  - `arccos( x )`
-  - `arctan( x )`
-  - `sinh( x )`
-  - `cosh( x )`
-  - `tanh( x )`
-  - `arsinh( x )`
-  - `arcosh( x )`
-  - `artanh( x )`
-
-### Example Code
-```py
->>> # creating statistics to a set of measurements, the supplied data is scaled by the Pre-factor `PF.m` same as `exp=-3`
->>> length = Measurement( [1.249, 1.234, 1.252, 1.238, 1.235, 1.246, 1.262, 1.255, 1.243], PF.m, id='d' ) # data is in millimeter
-Measurement:
-+----------------------------------------------------+
-|         N:              9                          |
-| Spanwidth:        0.028 * 10^-3                    |
-| -------------------------------------------------- |
-|   Average:       (1246 ± 3.2)e-6       δe= 0.0025  |
-|    Median:        (1.2 ± 0)e-3         δe= 0E+27   |
-| -------------------------------------------------- |
-|        σ²:        (80 ± 4.4)e-9        δe= 0.056   |
-|         σ:       (8.9 ± 2.1)e-6        δe= 0.24    |
-|        s²:        (90 ± 5.6)e-9        δe= 0.062   |
-|         s:       (9.5 ± 2.4)e-6        δe= 0.25    |
-+----------------------------------------------------+
-
->>> # defining erroneous values
->>> # id is optional and does not alter results of your calculations
->>> # it is mainly there to be a placeholder in the .print_info_equation() output (example is below)
->>> a = Value( '1.630' , '0.021' , prec=2, id='a' )
->>> b = Value( '0.6649', '0.0040', prec=3, id='b' )
->>> x = Value( '1.376' , '0.037' , prec=2, id='x' )
-
->>> a.v # alias for a.value
-1.63
-
->>> a.error # alias for a.e
-0.021
-
->>> a.re # alias for a.relative_error
-0.013
-
->>> # examples displaying the syntax of different calculations
->>> y1 = 13*a*x + 14*a*b*x**2 + 21*a*b**3
-67.947 ± 2.513    δe= 0.03699
-
->>> y2 = exp( ( a - x ) / x )
-(1202.73 ± 42.48)e-3    δe= 0.03532
-
->>> y3 = b * sin( a * x )
-(520.3 ± 27.86)e-3    δe= 0.05355
-
->>> y4 = ( x - a ) / ( x + b )
-(-124.45 ± 22.84)e-3    δe= 0.1835
-
->>> y1.print_info_equation()
-Equation   : b**3 * a * 21 + x * a * 13 + x**2 * b * a * 14
-Derivatives:
-        x:      a * 13 + b * a * x * 28
-        b:      a * b**2 * 63 + x**2 * a * 14
-        a:      b**3 * 21 + x * 13 + x**2 * b * 14
-```
 """
-
-
-
 
 
 
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Optional, Sequence, Any
+from typing import Optional, Sequence, Any, Callable
 from functools import cache, reduce
 
 from decimal import *
@@ -167,7 +22,16 @@ PRINT_MATH_DEBUG = False
 EPSILON_EXP = 12
 
 def is_integer( d1:Decimal ) -> bool:
-    return d1.to_integral_value().compare( round(d1, EPSILON_EXP) ) == Decimal('0')
+    epsilon = EPSILON_EXP
+    
+    while True:
+        try:
+            return d1.to_integral_value().compare( round(d1, epsilon) ) == Decimal('0')
+        except InvalidOperation:
+            epsilon -= 1
+        finally:
+            if epsilon <= 0:
+                return True
 
 #--------------------------------------------------------------------------------------------------
 # Enums
@@ -237,7 +101,7 @@ class PF():
     """
     Converting data from one *unit-scale* to an other specific *unit-scale*.
 
-    *PF* employs *Decimal-Prefixes* or *Pre-factors* to denote the magnitude or scale of units( i.e *kilometers* (*km*), *microfarads* (*µF*) etc ).
+    *PF* employs *Decimal-Prefixes* or *Pre-factors* to denote the magnitude or scale of units( i.e *kilometer* (*km*), *microfarad* (*µF*) etc ).
     
     example:
     >>> # creating a mass `Value` in units of milligram that are converted to kilograms
@@ -289,7 +153,7 @@ class PF():
     
     @classmethod
     @property
-    def DEKA(cls) -> PF:
+    def DECA(cls) -> PF:
         '''Pre-factor of `10**1`'''
         return PF( 1 )
     
@@ -319,7 +183,7 @@ class PF():
     
     @classmethod
     @property
-    def MU(cls) -> PF:
+    def MICRO(cls) -> PF:
         '''Pre-factor of `10**-6`'''
         return PF( -6 )
     
@@ -331,7 +195,7 @@ class PF():
     
     @classmethod
     @property
-    def PIKO(cls) -> PF:
+    def PICO(cls) -> PF:
         '''Pre-factor of `10**-12`'''
         return PF( -12 )
     
@@ -347,14 +211,14 @@ class PF():
     M  = MEGA 
     k  = KILO 
     h  = HECTO
-    da = DEKA 
+    da = DECA 
     _  = NONE 
     d  = DEZI 
     c  = CENTI
     m  = MILLI
-    µ  = MU   
+    µ  = MICRO
     n  = NANO 
-    p  = PIKO 
+    p  = PICO 
     f  = FEMTO
     
     __exp: int
@@ -386,11 +250,15 @@ class PF():
     def __repr__(self) -> str:
         return f"PF({self.exponent:})"
     
-    def __mul__(self, _o:PF):
+    def __mul__(self, _o:PF|Decimal|int|float|str) -> PF | Decimal:
+        if isinstance( _o, (Decimal|int|float|str) ):
+            return Decimal( _o ) * self.factor
         return PF( self.exponent + _o.exponent )
     __rmul__ = __mul__
     
     def __truediv__(self, _o:PF):
+        if isinstance( _o, (Decimal|int|float|str) ):
+            return Decimal( _o ) / self.factor
         return PF( self.exponent - _o.exponent )
 
     def __pow__(self, _exp:int) -> PF:
@@ -402,7 +270,8 @@ class PF():
 # Logic and Expression handling #
 #-------------------------------#
 class Expression():
-    STR_FLOAT_ROUND: int = 3
+    DISABLE_SIMPLIFY: bool = False
+    STR_FLOAT_ROUND : int  = 3
     
     signature: int
     '''must be unique for any Expression expect those who have the same value and the same derivatives'''
@@ -411,15 +280,14 @@ class Expression():
         self.signature = self.__hash__()
     
     @staticmethod
-    def assert_Expression_type(*args:Sequence[Expression|Any]) -> Optional[Exception[TypeError]]:
+    def assert_Expression_type(*args:Sequence[Expression|Any]) -> Optional[TypeError]:
         for a in args:
             if not isinstance(a, Expression):
                 raise TypeError( f"The supplied argument of type `{type(a)}` is not valid in this context, the Type must be `Expression` exclusively" )
     
     def value(self) -> Decimal: ...
     def differentiate(self, variable:Value) -> Expression: ...
-    def simplify(self) -> Expression:
-        return self
+    def simplify(self) -> Expression: ...
     
     def to_str( self, expression:Expression ) -> str:
         match self, expression:
@@ -450,6 +318,17 @@ class Expression():
         
         return self.signature == _o.signature
 
+    def _debug(func) -> Callable[..., Expression]:
+        def f(*args) -> Expression:
+            self = args[0]
+            
+            if func.__name__ == "simplify":
+                if Expression.DISABLE_SIMPLIFY:
+                    return self
+            
+            return func(*args)
+        return f
+
 class Singleton(Expression):
     var_value: Optional[Value]
     constant : Optional[Decimal]
@@ -474,6 +353,13 @@ class Singleton(Expression):
     def differentiate(self, variable: Value) -> Expression:
         return Singleton( int( math.copysign(int( self.var_value == variable ), self.var_value._value) ) if self.var_value else Decimal('0') )
     
+    #@Expression._debug
+    def simplify(self) -> Expression:
+        if self.var_value is None:
+            if self.constant < 0:
+                return Negative( Singleton( -self.constant ) )
+        return self
+    
     @cache
     def __str__(self) -> str:
         if self.var_value:
@@ -483,7 +369,6 @@ class Singleton(Expression):
 
     def __hash__(self) -> int:
         return hash( (self.var_value, self.constant) )
-
 class Negative(Expression):
     expression: Expression
     
@@ -502,6 +387,7 @@ class Negative(Expression):
     def differentiate(self, variable: Value) -> Expression:
         return Negative( self.expression.differentiate( variable ) ).simplify()
 
+    #@Expression._debug
     def simplify(self) -> Expression:
         self.expression = self.expression.simplify()
         
@@ -533,6 +419,7 @@ class Negative(Expression):
         return hash( self.expression )
 
 
+
 class Add(Expression):
     operands: list[Expression]
     
@@ -551,11 +438,9 @@ class Add(Expression):
     def differentiate(self, variable: Value) -> Expression:
         return Add( *[op.differentiate(variable) for op in self.operands] ).simplify()
 
+    @Expression._debug
     def simplify(self) -> Expression:
         self.operands = [ op.simplify() for op in self.operands ]
-        
-        if len(self.operands) == 1:
-            return self.operands[0]
         
         # integrate children of the same type into the parent class
         other_adds: list[Add] = list( filter( lambda op: isinstance(op, Add), self.operands ) )
@@ -564,31 +449,47 @@ class Add(Expression):
             self.operands.remove( op )
             self.operands.extend( op.operands )
         
-        # manage singles, remove zero singletons and combine constant singletons
-        if all( map(lambda op: isinstance(op, Singleton) and op.constant == Decimal('0'), self.operands) ):
-            return Singleton( '0' )
+        # manage all multiple operands, add(/sub) same operands
+        op_counter: dict[Expression, int] = dict.fromkeys( set(map( lambda op: op.expression if isinstance(op, Negative) else op, self.operands )), 0 )
         
+        for o in self.operands:
+            if isinstance( o, Negative ):
+                op_counter[o.expression] -= 1
+            else:
+                op_counter[o] += 1
+        
+        self.operands = [ Multiply( Singleton(str(count)), op ).simplify() for op, count in op_counter.items() ]
+        
+        
+        # manage singles, remove zero singletons and combine constant singletons
         singles: list[Singleton] = list( filter( lambda op: isinstance(op, Singleton), self.operands ) )
         
         counter = Decimal('0')
-        for s in singles:
-            if s.constant is not None:
-                self.operands.remove( s )
+        for op in singles:
+            if op.constant is not None:
+                self.operands.remove( op )
                 
-                counter += s.constant
+                counter += op.constant
         
+        # all operands are constant singletons
+        # we need to include this because if all operands are 0 the self.operands list would be empty and cause an exception
+        if not self.operands:
+            return Singleton( counter )
         
         if counter != Decimal('0'):
             self.operands.append( Singleton(counter) )
         
         
         # manage Negatives so that none is to the left
-        if all( map( lambda op: isinstance(op, Negative), self.operands ) ):
+        if all( list(map( lambda op: isinstance(op, Negative), self.operands )) ):
             return Negative( Add( *[op.expression for op in self.operands] ) )
         else:
             while isinstance(self.operands[0], Negative):
                 self.operands.append( self.operands[0] )
                 self.operands.pop(0)
+        
+        if len(self.operands) == 1:
+            return self.operands[0]
         
         return self
     
@@ -607,7 +508,6 @@ class Add(Expression):
 
     def __hash__(self) -> int:
         return hash( tuple(self.operands) )
-
 class Multiply(Expression):
     operands: list[Expression]
     
@@ -630,11 +530,9 @@ class Multiply(Expression):
     def differentiate(self, variable: Value) -> Expression:
         return Add( *[Multiply( *[op.differentiate(variable), *(self.operands[:i] + self.operands[i+1:])] ) for i, op in enumerate(self.operands)] ).simplify()
 
+    @Expression._debug
     def simplify(self) -> Expression:
         self.operands = [ op.simplify() for op in self.operands ]
-        
-        if len(self.operands) == 1:
-            return self.operands[0]
         
         # integrate children of the same type into the parent class
         other_multipliers: list[Multiply] = list( filter( lambda op: isinstance(op, Multiply), self.operands ) )
@@ -642,6 +540,18 @@ class Multiply(Expression):
         for op in other_multipliers:
             self.operands.extend( op.operands )
             self.operands.remove( op )
+        
+        
+        # manage Negatives NoOp for count(Negatives)%2==0 else Negative(abs(operands))
+        negatives: list[Negative] = list(filter( lambda op: isinstance(op, Negative), self.operands ))
+        
+        for n in negatives:
+            self.operands.remove( n )
+            self.operands.append( n.expression )
+        
+        if len(negatives) % 2 == 1:
+            return Negative( self ).simplify()
+        
         
         # manage singles, remove zero singletons and combine constant singletons
         singles: list[Singleton] = list( filter( lambda op: isinstance(op, Singleton), self.operands ) )
@@ -656,19 +566,13 @@ class Multiply(Expression):
                 
                 counter *= s.constant
         
+        # all operands are constant singletons
+        # we need to include this because if all operands are 1 the self.operands list would be empty and cause an exception
+        if not self.operands:
+            return Singleton( counter )
+        
         if counter != Decimal('1'):
             self.operands.append( Singleton(counter) )
-        
-        
-        # manage Negatives NoOp for count(Negatives)%2==0 else Negative(abs(operands))
-        negatives: list[Negative] = list(filter( lambda op: isinstance(op, Negative), self.operands ))
-        
-        for n in negatives:
-            self.operands.remove( n )
-            self.operands.append( n.expression )
-        
-        if len(negatives) % 2 == 1:
-            return Negative( self ).simplify()
         
         # manage and combine Fractions
         fractions: list[Fraction] = list( filter( lambda op: isinstance(op, Fraction), self.operands ) )
@@ -684,6 +588,9 @@ class Multiply(Expression):
                          ).simplify()
             )
         
+        if len(self.operands) == 1:
+            return self.operands[0]
+        
         return self
     
     @cache
@@ -692,13 +599,13 @@ class Multiply(Expression):
 
     def __hash__(self) -> int:
         return hash( tuple(self.operands) )
-
 class Fraction(Expression):
     numerator  : Expression
     denominator: Expression
     
     def __init__(self, numerator:Expression, denominator:Expression) -> None:
         Expression.assert_Expression_type( numerator, denominator )
+        assert denominator.value() != 0, ValueError( "The denominator can not the 0" )
         
         self.numerator   = numerator.simplify()
         self.denominator = denominator.simplify()
@@ -707,9 +614,6 @@ class Fraction(Expression):
     
     @cache
     def value(self) -> Decimal:
-        if self.denominator.value() == 0:
-            raise DivisionByZero( "The denominator can not the 0" )
-        
         return self.numerator.value() / self.denominator.value()
     
     @cache
@@ -734,9 +638,13 @@ class Fraction(Expression):
                             )
                         ).simplify()
 
+    @Expression._debug
     def simplify(self) -> Expression:
         self.numerator   = self.numerator.simplify()
         self.denominator = self.denominator.simplify()
+        
+        if self.numerator == self.denominator:
+            return Singleton( '1' )
         
         if isinstance(self.denominator, Singleton) and self.denominator.constant == Decimal('1'):
             return self.numerator
@@ -852,7 +760,7 @@ class Pow(Expression):
     
     @cache
     def differentiate(self, variable: Value) -> Expression:
-        # d/dx (base(x)^exponent(x)) = base(x)**(exponent(x) - 1) * ( exponent(x) * (d/dx base(x)) + (d/dx exponent(x)) * base(x) * ln( base(x) ) )
+        # d/dx (base(x)**exponent(x)) = base(x)**(exponent(x) - 1) * ( exponent(x) * (d/dx base(x)) + (d/dx exponent(x)) * base(x) * ln( base(x) ) )
         return Multiply( 
                         Pow( 
                             self.base,
@@ -869,20 +777,14 @@ class Pow(Expression):
                             Multiply( 
                                      self.exponent.differentiate(variable),
                                      self.base,
-                                     
-                                     # why use 0.5 * log(base(x)**2) if its just the same as log(base(x))?
-                                     # > this is intentional to avoid negative arguments of the logarithm
-                                     Singleton('0.5'),
                                      Log( 
-                                         Multiply( 
-                                                  self.base, 
-                                                  self.base 
-                                                  ) 
-                                         ) 
+                                         self.base
+                                         )
                                      )
                             )
                         ).simplify()
 
+    @Expression._debug
     def simplify(self) -> Expression:
         self.base     = self.base.simplify()
         self.exponent = self.exponent.simplify()
@@ -896,7 +798,8 @@ class Pow(Expression):
             elif self.exponent.constant == Decimal('1'):
                 return self.base
         
-        if isinstance(self.base, Singleton) and self.base.constant and isinstance(self.exponent, Singleton) and self.exponent.constant:
+        if  isinstance(self.base, Singleton) and self.base.constant \
+        and isinstance(self.exponent, Singleton) and self.exponent.constant:
             return Singleton( self.value() )
         
         return self
@@ -932,7 +835,6 @@ class Pow(Expression):
 
     def __hash__(self) -> int:
         return hash( (self.base, self.exponent) )
-
 class Exp(Expression):
     exponent: Expression
     
@@ -954,6 +856,7 @@ class Exp(Expression):
                         self.exponent.differentiate(variable)
                         ).simplify()
 
+    @Expression._debug
     def simplify(self) -> Expression:
         self.exponent = self.exponent.simplify()
         
@@ -968,13 +871,13 @@ class Exp(Expression):
     
     def __hash__(self) -> int:
         return hash( self.exponent )
-
 class Log(Expression):
     base    : Optional[Expression]
     argument: Expression
     
     def __init__(self, argument:Expression, base:Optional[Expression]=None) -> None:
         Expression.assert_Expression_type( argument )
+        
         argument = argument.simplify()
         if base:
             Expression.assert_Expression_type( base )
@@ -1000,6 +903,12 @@ class Log(Expression):
         # L(x) = d/dx (ln(argument(x))/ln(base(x))) 
         #      = d/dx log_{base(x)}(argument(x)) = ( (d/dx argument(x)) / argument(x) - L(x) * (d/dx base(x)) / base(x) ) / ln(base(x))
         # here: log(...) is the natural logarithm
+        if not self.base:
+            return Fraction(
+                self.argument.differentiate( variable ),
+                self.argument
+            ).simplify()
+        
         return Fraction( 
                         Add( 
                             Fraction( 
@@ -1019,6 +928,7 @@ class Log(Expression):
                         Log( self.base )
                         ).simplify()
 
+    @Expression._debug
     def simplify(self) -> Expression:
         self.base     = self.base if self.base is None else self.base.simplify()
         self.argument = self.argument.simplify()
@@ -1082,6 +992,7 @@ class Sin(Expression):
                         self.expression.differentiate(variable)
                         ).simplify()
 
+    @Expression._debug
     def simplify(self) -> Expression:
         self.expression = self.expression.simplify()
         
@@ -1096,7 +1007,6 @@ class Sin(Expression):
 
     def __hash__(self) -> int:
         return hash( self.expression )
-
 class Cos(Expression):
     expression: Expression
     
@@ -1120,6 +1030,7 @@ class Cos(Expression):
                                  ) 
                         ).simplify()
 
+    @Expression._debug
     def simplify(self) -> Expression:
         self.expression = self.expression.simplify()
         
@@ -1134,12 +1045,13 @@ class Cos(Expression):
 
     def __hash__(self) -> int:
         return hash( self.expression )
-
 class Tan(Expression): 
     expression: Expression
     
     def __init__(self, expression: Expression) -> None:
         Expression.assert_Expression_type( expression )
+        
+        assert not is_integer( expression.value() / Decimal( math.pi ) - Decimal('0.5') ), ValueError( "Expression must not evaluate to a multiple of `expression`/pi - 0.5 " )
 
         self.expression = expression.simplify()
 
@@ -1159,6 +1071,7 @@ class Tan(Expression):
                             )
                         ).simplify()
 
+    @Expression._debug
     def simplify(self) -> Expression:
         self.expression = self.expression.simplify()
         
@@ -1180,6 +1093,8 @@ class Arcsin(Expression):
     
     def __init__(self, expression: Expression) -> None:
         Expression.assert_Expression_type( expression )
+
+        assert -1 <= expression.value() <= 1, ValueError( "Expression must be in region [-1, 1]" )
 
         self.expression = expression.simplify()
 
@@ -1208,6 +1123,7 @@ class Arcsin(Expression):
                             )
                         ).simplify()
 
+    @Expression._debug
     def simplify(self) -> Expression:
         self.expression = self.expression.simplify()
         
@@ -1222,12 +1138,13 @@ class Arcsin(Expression):
 
     def __hash__(self) -> int:
         return hash( self.expression )
-
 class Arccos(Expression):
     expression: Expression
     
     def __init__(self, expression: Expression) -> None:
         Expression.assert_Expression_type( expression )
+
+        assert -1 <= expression.value() <= 1, ValueError( "Expression must be in region [-1, 1]" )
 
         self.expression = expression.simplify()
 
@@ -1242,6 +1159,7 @@ class Arccos(Expression):
         # d/dx acos(f(x)) = -d/dx asin(f(x)) = -(d/dx f(x)) / sqrt(1 - f(x)**2)
         return Negative( Arcsin(self.expression).differentiate(variable) ).simplify()
 
+    @Expression._debug
     def simplify(self) -> Expression:
         self.expression = self.expression.simplify()
         
@@ -1256,7 +1174,6 @@ class Arccos(Expression):
 
     def __hash__(self) -> int:
         return hash( self.expression )
-
 class Arctan(Expression):
     expression: Expression
     
@@ -1285,6 +1202,7 @@ class Arctan(Expression):
                             )
                         ).simplify()
 
+    @Expression._debug
     def simplify(self) -> Expression:
         self.expression = self.expression.simplify()
         
@@ -1328,6 +1246,7 @@ class Sinh(Expression):
                         self.expression.differentiate(variable)
                         ).simplify()
 
+    @Expression._debug
     def simplify(self) -> Expression:
         self.expression = self.expression.simplify()
         
@@ -1342,7 +1261,6 @@ class Sinh(Expression):
 
     def __hash__(self) -> int:
         return hash( self.expression )
-
 class Cosh(Expression): 
     expression: Expression
     
@@ -1370,6 +1288,7 @@ class Cosh(Expression):
                         self.expression.differentiate(variable)
                         ).simplify()
 
+    @Expression._debug
     def simplify(self) -> Expression:
         self.expression = self.expression.simplify()
         
@@ -1384,7 +1303,6 @@ class Cosh(Expression):
 
     def __hash__(self) -> int:
         return hash( self.expression )
-
 class Tanh(Expression): 
     expression: Expression
     
@@ -1425,6 +1343,7 @@ class Tanh(Expression):
                             )
                         ).simplify()
 
+    @Expression._debug
     def simplify(self) -> Expression:
         self.expression = self.expression.simplify()
         
@@ -1486,6 +1405,7 @@ class Arsinh(Expression):
                             )
                         ).simplify()
 
+    @Expression._debug
     def simplify(self) -> Expression:
         self.expression = self.expression.simplify()
         
@@ -1500,13 +1420,14 @@ class Arsinh(Expression):
 
     def __hash__(self) -> int:
         return hash( self.expression )
-
 class Arcosh(Expression):
     expression: Expression
     
     def __init__(self, expression: Expression) -> None:
         Expression.assert_Expression_type( expression )
-
+        
+        assert 1 <= expression.value(), ValueError( "Expression must be in region [1, +inf)" )
+        
         self.expression = expression.simplify()
 
         self.__signature__()
@@ -1546,6 +1467,7 @@ class Arcosh(Expression):
                             )
                         ).simplify()
 
+    @Expression._debug
     def simplify(self) -> Expression:
         self.expression = self.expression.simplify()
         
@@ -1560,13 +1482,14 @@ class Arcosh(Expression):
 
     def __hash__(self) -> int:
         return hash( self.expression )
-
 class Artanh(Expression):
     expression: Expression
     
     def __init__(self, expression: Expression) -> None:
         Expression.assert_Expression_type( expression )
 
+        assert -1 <= expression.value() <= 1, ValueError( "Expression must be in region [-1, 1]" )
+        
         self.expression = expression.simplify()
 
         self.__signature__()
@@ -1605,6 +1528,7 @@ class Artanh(Expression):
                             )
                         ).simplify()
 
+    @Expression._debug
     def simplify(self) -> Expression:
         self.expression = self.expression.simplify()
         
@@ -1651,7 +1575,6 @@ def exp( _x:Value|Decimal|int|float|str, / ) -> Value:
         
         case _:
             raise _type_error_input(_x)
-
 def log( argument:Value|Decimal|int|float|str, base:Optional[Value|Decimal|int|float|str]=None ) -> Value:
     match (argument, base):
         case ( Value(), Value() ):
@@ -1679,9 +1602,9 @@ def log( argument:Value|Decimal|int|float|str, base:Optional[Value|Decimal|int|f
                 vars_base
             )
     
-        case ( Decimal() | int() | float() | str(), Decimal() | int() | float() | str() ):
+        case ( Decimal() | int() | float() | str(), None | Decimal() | int() | float() | str() ):
             return Value._init_by_expression(
-                Log( Singleton( argument ), Singleton( base ) ),
+                Log( Singleton( argument ), Singleton( base ) if base else None ),
                 {}
             )
         
@@ -1707,7 +1630,6 @@ def sin( _x:Value|Decimal|int|float|str, / ) -> Value:
         
         case _:
             raise _type_error_input(_x)
-
 def cos( _x:Value|Decimal|int|float|str, / ) -> Value:
     match _x:
         case Value():
@@ -1726,7 +1648,6 @@ def cos( _x:Value|Decimal|int|float|str, / ) -> Value:
         
         case _:
             raise _type_error_input(_x)
-
 def tan( _x:Value|Decimal|int|float|str, / ) -> Value:
     match _x:
         case Value():
@@ -1765,7 +1686,6 @@ def arcsin( _x:Value|Decimal|int|float|str, / ) -> Value:
         
         case _:
             raise _type_error_input(_x)
-
 def arccos( _x:Value|Decimal|int|float|str, / ) -> Value:
     match _x:
         case Value():
@@ -1784,7 +1704,6 @@ def arccos( _x:Value|Decimal|int|float|str, / ) -> Value:
         
         case _:
             raise _type_error_input(_x)
-
 def arctan( _x:Value|Decimal|int|float|str, / ) -> Value:
     match _x:
         case Value():
@@ -1823,7 +1742,6 @@ def sinh( _x:Value|Decimal|int|float|str, / ) -> Value:
         
         case _:
             raise _type_error_input(_x)
-
 def cosh( _x:Value|Decimal|int|float|str, / ) -> Value:
     match _x:
         case Value():
@@ -1842,7 +1760,6 @@ def cosh( _x:Value|Decimal|int|float|str, / ) -> Value:
         
         case _:
             raise _type_error_input(_x)
-
 def tanh( _x:Value|Decimal|int|float|str, / ) -> Value:
     match _x:
         case Value():
@@ -1881,7 +1798,6 @@ def arsinh( _x:Value|Decimal|int|float|str, / ) -> Value:
         
         case _:
             raise _type_error_input(_x)
-
 def arcosh( _x:Value|Decimal|int|float|str, / ) -> Value:
     match _x:
         case Value():
@@ -1900,7 +1816,6 @@ def arcosh( _x:Value|Decimal|int|float|str, / ) -> Value:
         
         case _:
             raise _type_error_input(_x)
-
 def artanh( _x:Value|Decimal|int|float|str, / ) -> Value:
     match _x:
         case Value():
@@ -2040,7 +1955,8 @@ class Value():
     _expression  : Expression
     
     @classmethod
-    def _init_by_expression(cls, expression:Expression, variables_seen:set[Value]) -> Value: 
+    def _init_by_expression(cls, expression:Expression, variables_seen:set[Value]) -> Value:
+        variables_seen = variables_seen or set()
         expression = expression.simplify()
         
         # debug #
@@ -2049,12 +1965,15 @@ class Value():
             print( "Derivatives:" )
             print( *[f"\t{var.get_id()}:\t{str(expression.differentiate(var))}" for var in variables_seen], sep='\n', end='\n\n' )
 
-        error     = sum( map( lambda var: (expression.differentiate(var).value() * var._error)**2, variables_seen) )
+        error_sqr = Decimal('0')
+        prec = None
+        if variables_seen:
+            error_sqr = sum( map( lambda var: (expression.differentiate(var).value() * var._error)**2, variables_seen) )
+            prec_list = map(lambda var: var.__prec, variables_seen)
+            prec      = max( prec_list ) if Value.PREC_MODE == Precision_mode.TOWARDS_MAX else min( prec_list )
         
-        prec_list = map(lambda var: var.__prec, variables_seen)
-        prec      = max( prec_list ) if Value.PREC_MODE == Precision_mode.TOWARDS_MAX else min( prec_list )
-        
-        new_value                = Value(expression.value(), error.sqrt(), prec=prec)
+        new_value               = Value(expression.value(), error_sqr.sqrt())
+        new_value.__prec        = prec or new_value.__prec
         new_value._expression   = expression
         new_value._variables    = variables_seen
         new_value._is_primitive = False
@@ -2132,7 +2051,7 @@ class Value():
         return s
 
     def __repr__(self) -> str:
-        return f"Value( {self._value}, {self._error}, prec={self.__prec} )"
+        return f"Value( {self._value}, {self._error}, prec={self.__prec}, id={self.__id} )"
     
     def __hash__(self) -> int:
         return hash( (self.__value, self.__error, self.__exp, self.__prec ) )
@@ -2265,12 +2184,6 @@ class Value():
     def __pow__(self, exp:Value|Decimal|int|float, _mod:None=None) -> Value:
         assert _mod is None, NotImplementedError("modulo operations are not supported")
         
-        if self._value == 0:
-            return Value._init_by_expression(
-                Singleton( '0' ),
-                { self, exp } if isinstance( exp, Value ) and exp._is_primitive else { self }
-            )
-        
         vars, _o_expression = self._operation_setup( exp )
 
         return Value._init_by_expression(
@@ -2295,12 +2208,6 @@ class Value():
     def __rpow__(self, base:Value|Decimal|int|float, _mod:None=None) -> Value:
         assert _mod is None, NotImplementedError("modulo operations are not supported")
         
-        if base._value == 0 if isinstance(base, Value) else base == 0:
-            return Value._init_by_expression(
-                Singleton( '0' ),
-                { self, base } if isinstance( base, Value ) and base._is_primitive else { self }
-            )
-        
         vars, _o_expression = self._operation_setup( base )
 
         return Value._init_by_expression(
@@ -2311,13 +2218,13 @@ class Value():
             vars
         )
         
-        return Value._init_by_expression(
-            Pow( 
-                Singleton( base ), 
-                self._expression 
-                ),
-            self.__variables.union( [ base ] ) if isinstance(base, Value) else self.__variables
-        )
+        # return Value._init_by_expression(
+        #     Pow( 
+        #         Singleton( base ), 
+        #         self._expression 
+        #         ),
+        #     self.__variables.union( [ base ] ) if isinstance(base, Value) else self.__variables
+        # )
 
 class Measurement():
     """creating statistics to a set of measurements"""
@@ -2417,22 +2324,36 @@ class Regression_linear_simple():
     X: list[ Decimal ]
     Y: list[ Decimal ]
     
-    sum_x    : Decimal
-    sum_y    : Decimal
-    sum_x_sqr: Decimal
-    sum_x_y  : Decimal
     
+    sum_x: Decimal
+    '''∑ ( `xₖ` )'''
+
+    sum_y: Decimal
+    '''∑ ( `yₖ` )'''
+
+    sum_x_sqr: Decimal
+    '''∑ ( `xₖ`² )'''
+
+    sum_x_y: Decimal
+    '''∑ ( `xₖ`*`yₖ` )'''
+
     determinate_s: Decimal
+    '''`∆` = `N` * ∑ ( `xₖ`² ) - (∑ ( `xₖ` ))²'''
     
     coef_A: Value
+    '''a = 1/`∆` * ( ∑ ( `xₖ`² ) * ∑ ( `yₖ` ) - ∑ ( `xₖ` ) * ∑ ( `xₖ`*`yₖ` ) )'''
     coef_B: Value
+    '''b = 1/`∆` * ( `N` * ∑ ( `xₖ`*`yₖ` ) - ∑ ( `xₖ` ) * ∑ ( `yₖ` ) )'''
     
     s_sqr  : Decimal
     
     def __init__(self, x_data:Sequence[Decimal|int|float|str], y_data:Sequence[Decimal|int|float|str]) -> None:
+        x_data = list( x_data )
+        y_data = list( y_data )
+        
         assert all( map( lambda d: isinstance( d, (Decimal, int, float, str)), x_data ) ), TypeError( "Some entries in x_data are not of type (Decimal | int | float | str)" )
         assert all( map( lambda d: isinstance( d, (Decimal, int, float, str)), y_data ) ), TypeError( "Some entries in y_data are not of type (Decimal | int | float | str)" )
-        assert len(x_data) == len(y_data), ValueError( "Sequences x_data and y_data must be of equal length" )
+        assert len(x_data) == len(y_data), ValueError( f"Sequences x_data of length {len(x_data):d} and y_data of length {len(y_data):d} must be of equal length" )
         
         self.X = [ Decimal(d) for d in x_data ]
         self.Y = [ Decimal(d) for d in y_data ]
@@ -2459,7 +2380,7 @@ class Regression_linear_simple():
     def __str__(self) -> str:
         width = 50
 
-        max_name_width = 11
+        max_name_width = 9
         
         print_mode = Value.PRINT_MODE
         Value.PRINT_MODE = Print_mode.NO_RELATIVE_ERROR
@@ -2480,16 +2401,16 @@ class Regression_linear_simple():
             
             fmt('d').format( 'N', self.N ),
             
-            fmt_decimal( "sum X_i"    , self.sum_x    ),
-            fmt_decimal( "sum Y_i"    , self.sum_y    ),
-            fmt_decimal( "sum X_i^2"  , self.sum_x_sqr),
-            fmt_decimal( "sum X_i*Y_i", self.sum_x_y  ),
+            fmt_decimal( "∑ Xₖ"    , self.sum_x    ),
+            fmt_decimal( "∑ Yₖ"    , self.sum_y    ),
+            fmt_decimal( "∑ Xₖ²"   , self.sum_x_sqr),
+            fmt_decimal( "∑ Xₖ*Yₖ", self.sum_x_y  ),
             
             h_line,
             
-            fmt_decimal( "determinate", self.determinate_s),
-            fmt_decimal( "s²"         , self.s_sqr        ),
-            fmt_decimal( "s"          , self.s_sqr.sqrt() ),
+            fmt_decimal( "∆" , self.determinate_s),
+            fmt_decimal( "s²", self.s_sqr        ),
+            fmt_decimal( "s" , self.s_sqr.sqrt() ),
             
             bound_top_bottom,
         ] )
@@ -2500,7 +2421,7 @@ class Regression_linear_simple():
         y_regression = lambda x: self.coef_A.value + self.coef_B.value*x
         
         
-        s += f"{'x_i':^4s} | {'y_i':^5s} | {'y':^5s} | {'(y - y_i)**2':s}\n"
+        s += f"{'xₖ':^4s} | {'yₖ':^5s} | {'y':^5s} | {'(y - yₖ)²':s}\n"
         s += '-'*(4+3+5+3+5+3+12) + '\n'
         
         sum_delta = Decimal('0')
@@ -2511,12 +2432,170 @@ class Regression_linear_simple():
             s += f"{x:^.2f} | {y:^.2f} | {y_of_x:^.2f} | {(y_of_x - y)**2:^.2f}\n"
         
         s += '-'*(4+3+5+3+5+3+12) + '\n'
-        s += f"sum  (y-y_i)**2: {sum_delta:.2f}"
+        s += f"∑ (y-yₖ)²: {sum_delta:.2f}"
         
         
         Value.PRINT_MODE = print_mode
         
         return s
+
+class Regression_linear():
+    N: int
+    X: list[ Decimal ]
+    Y: list[ Value ]
+    
+    sum_1: Decimal
+    '''∑ ( 1/`σₖ`²)'''
+
+    sum_x: Decimal
+    '''∑ ( `xₖ`/`σₖ`²)'''
+    
+    sum_x_sqr: Decimal
+    '''∑ ( `xₖ`²/`σₖ`²)'''
+    
+    sum_y: Decimal
+    '''∑ ( `yₖ`/`σₖ`²)'''
+    
+    sum_x_y  : Decimal
+    '''∑ ( `xₖ`*`yₖ`/`σₖ`²)'''
+    
+    determinate: Decimal
+    '''`∆` = ∑ ( 1/`σₖ`²) * ∑ ( `xₖ`²/`σₖ`²) - (∑ ( `xₖ`/`σₖ`²))²'''
+    
+    coef_A: Value
+    '''a = 1/`∆` * ( ∑ ( `yₖ`/`σₖ`²) * ∑ ( `xₖ`²/`σₖ`²) - ∑ ( `xₖ`/`σₖ`²) * ∑ ( `xₖ`*`yₖ`/`σₖ`²) )'''
+    coef_B: Value
+    '''b = 1/`∆` * ( ∑ ( 1/`σₖ`²) * ∑ ( `xₖ`*`yₖ`/`σₖ`²) - ∑ ( `xₖ`/`σₖ`²) * ∑ ( `yₖ`/`σₖ`²) )'''
+    
+    def __init__(self, x_data:Sequence[Decimal|int|float|str], y_data:Sequence[Value]) -> None:
+        x_data = list( x_data )
+        y_data = list( y_data )
+        
+        assert all( map( lambda d: isinstance( d, (Decimal, int, float, str)), x_data ) ), TypeError( "Some entries in x_data are not of type (Decimal | int | float | str)" )
+        assert all( map( lambda d: isinstance( d, Value), y_data ) ), TypeError( "Some entries in y_data are not of type Value" )
+        assert len(x_data) == len(y_data), ValueError( f"Sequences x_data of length {len(x_data):d} and y_data of length {len(y_data):d} must be of equal length" )
+        
+        self.X = [ Decimal(d) for d in x_data ]
+        self.Y = [ d for d in y_data ]
+        
+        self.N = len( self.X )
+        
+        self.sum_1     = Decimal('0')
+        self.sum_x     = Decimal('0')
+        self.sum_x_sqr = Decimal('0')
+        self.sum_y     = Decimal('0')
+        self.sum_x_y   = Decimal('0')
+        for x, y in zip(self.X, self.Y):
+            assert y.error != Decimal('0'), f"Data point (x= {x}, y= {y}) is invalid because the error of y is zero"
+            _1_err_sqr = y.error**-2
+            
+            self.sum_1     += _1_err_sqr
+            self.sum_x     += _1_err_sqr * x
+            self.sum_x_sqr += _1_err_sqr * x*x
+            self.sum_y     += _1_err_sqr * y.value
+            self.sum_x_y   += _1_err_sqr * x * y.value
+        
+        self.determinate = self.sum_1 * self.sum_x_sqr - self.sum_x * self.sum_x
+        
+        a = ( self.sum_y * self.sum_x_sqr - self.sum_x * self.sum_x_y ) / self.determinate
+        b = ( self.sum_1 * self.sum_x_y   - self.sum_x * self.sum_y   ) / self.determinate
+        
+        sigma_a = math.sqrt( self.sum_x_sqr / self.determinate )
+        sigma_b = math.sqrt( self.sum_1     / self.determinate )
+
+        self.coef_A = Value( a, sigma_a )
+        self.coef_B = Value( b, sigma_b )
+    
+    def __str__(self) -> str:
+        width = 50
+
+        max_name_width = 12
+        
+        print_mode = Value.PRINT_MODE
+        Value.PRINT_MODE = Print_mode.NO_RELATIVE_ERROR
+        
+        fmt = lambda format_type: "| {:>%ds}: {:^%d%s} |" % (max_name_width, width - max_name_width - 2, format_type)
+        fmt_center  = "| {:^%ds} |" % width
+        fmt_decimal = lambda name, value: fmt('f').format( name, float(value) )
+        
+        bound_top_bottom = "+-" + '-'*width + "-+"
+        h_line           = '| ' + '-'*width + ' |'
+        
+        s = '\n'.join( [
+            bound_top_bottom,
+            
+            fmt_center.format( f"Y = {self.coef_A} + ({self.coef_B})*X" ),
+            
+            h_line,
+            
+            fmt('d').format( 'N', self.N ),
+            
+            fmt_decimal( "∑    Xₖ/σ²", self.sum_x    ),
+            fmt_decimal( "∑    Yₖ/σ²", self.sum_y    ),
+            fmt_decimal( "∑   Xₖ²/σ²", self.sum_x_sqr),
+            fmt_decimal( "∑ Xₖ*Yₖ/σ²", self.sum_x_y  ),
+            
+            h_line,
+            
+            fmt_decimal( "∆", self.determinate  ),
+            
+            bound_top_bottom,
+        ] )
+        
+        s += '\n\n'
+        
+        Value.PRINT_MODE = print_mode
+        
+        return s
+
+
+def transform_to(
+    x_data              : Sequence[Value|Decimal|int|float|str],
+    y_data              : Sequence[Value|Decimal|int|float|str],
+    transform_function_x: Callable[[Value|Decimal|int|float|str], Value|Decimal] = Decimal,
+    transform_function_y: Callable[[Value|Decimal|int|float|str], Value|Decimal] = Decimal,
+    round_to            : int = 3
+    ) -> tuple[list[Value|Decimal|int|float|str], list[Value|Decimal|int|float|str]]:
+    """
+    Transform a given point-cloud via the supplied transform_function's
+
+    additionally prints a table with the transformed data
+
+    Args:
+        x_data (`Sequence[Value | Decimal | int | float | str]`): x coordinates of point cloud
+        y_data (`Sequence[Value | Decimal | int | float | str]`): y coordinates of point cloud
+        transform_function_x (`Callable[[Value | Decimal | int | float | str], Value | Decimal]`): function to be applied to every `x_data` entry. Defaults to `lambda x: Decimal(x)`.
+        transform_function_y (`Callable[[Value | Decimal | int | float | str], Value | Decimal]`): function to be applied to every `y_data` entry. Defaults to `lambda x: Decimal(x)`.
+        round_to (`int`, optional): [!ONLY FOR PRINTING!] post-decimal places all values are rounded to. Defaults to 3.
+
+    Returns:
+        `tuple[list[Decimal], list[Value]|list[Decimal|int|float|str]]`: transformed point-cloud as tuple[ list_of_transformed_x_data, list_of_transformed_y_data ]
+    """
+    
+    x_data = list( x_data )
+    y_data = list( y_data )
+    
+    assert all( map( lambda d: isinstance( d, (Value, Decimal, int, float, str)), x_data ) ), TypeError( "Some entries in x_data are not of type (Value | Decimal | int | float | str)" )
+    assert all( map( lambda d: isinstance( d, (Value, Decimal, int, float, str)), y_data ) ), TypeError( "Some entries in y_data are not of type (Value | Decimal | int | float | str)" )
+    assert len(x_data) == len(y_data), ValueError( f"Sequences x_data of length {len(x_data):d} and y_data of length {len(y_data):d} must be of equal length" )
+    
+    transform_function_x = transform_function_x if isinstance(transform_function_x, Callable) else Decimal
+    transform_function_y = transform_function_y if isinstance(transform_function_y, Callable) else Decimal
+    
+    transformed_x = [ transform_function_x(x) for x in x_data ]
+    transformed_y = [ transform_function_y(y) for y in y_data ]
+    
+    print( "transformed x_data | transformed y_data" )
+    
+    for x, y in zip( transformed_x, transformed_y ):
+        print(
+            ("{:>18.%d}" % round_to).format( x ) if isinstance(x, Decimal) else f"{str(x):18}",
+            ' | ',
+            ("{:>18.%d}" % round_to).format( y ) if isinstance(y, Decimal) else f"{str(y):18}",
+            sep=''
+            )
+    
+    return transformed_x, transformed_y
 
 
 if __name__ == '__main__':
@@ -2594,16 +2673,40 @@ if __name__ == '__main__':
     
     # nu.print_info_equation()
     
+    
     # Übung 8
     # test data
-    X = [0.20, 1.17, 1.96, 2.98, 4.05, 5.12, 5.93, 7.01, 8.24]
-    Y = [52.4, 54.6, 57.7, 59.5, 62.7, 65.6, 67.0, 69.0, 72.8]
+    # X = [0.20, 1.17, 1.96, 2.98, 4.05, 5.12, 5.93, 7.01, 8.24]
+    # Y = [52.4, 54.6, 57.7, 59.5, 62.7, 65.6, 67.0, 69.0, 72.8]
     
     # X = [0.16, 1.19, 2.12, 3.11, 4.10, 4.83, 6.12, 7.01, 8.19]
     # Y = [54.7, 54.8, 57.8, 60.3, 63.1, 63.7, 68.3, 71.0, 72.2]
     
-    print(Regression_linear_simple(X, Y))
+    # print(Regression_linear_simple(X, Y))
     
     
+    # Übung 9
+    T = [0.56, 1.23, 1.48, 2.07, 2.91, 3.43, 4.23, 4.87, 5.73, 6.36]
+    U = [53.05, 38.64, 35.16, 26.57, 17.72, 14.25, 10.27, 7.37, 4.67, 4.28]
+    R = 3.40 * PF.M
+    
+    
+    U = map( lambda u: Value( u, 0.5 ), U )
+    
+    T, U = transform_to( T, U, transform_function_y=lambda y: log(y, '10'), round_to=3 )
+    
+    regression = Regression_linear(T, U)
+    
+    U_0 = Decimal('10') ** regression.coef_A
+    tau = - log( exp('1'), '10' ) / regression.coef_B
+    C = tau / R
+    
+    print(regression)
+    print( f"U_0 = {U_0}" )
+    print( f"tau = {tau}" )
+    print( f"C   = {C}" )
+    
+    print( f"tau2 =", tau2:=log( exp('1'), '10' ) * -2.7 / log(Value(20.0, 0.2)/Value(68.5, 0.5), '10') )
+    print( f"C2   = { tau2 / R }" )
     
     pass
