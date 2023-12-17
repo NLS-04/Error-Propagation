@@ -6,15 +6,42 @@ This was created out of the frustration with the module *Fehlerrechnung* (engl. 
 
 ### INFORMATION FOR END USERS 
 
+- ### Math functions 
+(all trigonometric functions currently only support arguments in `radians`)
+
+argument `x` is of type ` Value | number_as_string | number`. All following functions return a `Value` instance
+
+  - `exp( x )`
+  - `log( argument [, base:x defaults to Euler-e ] )`
+  - `sin( x )`
+  - `cos( x )`
+  - `tan( x )`
+  - `arcsin( x )`
+  - `arccos( x )`
+  - `arctan( x )`
+  - `sinh( x )`
+  - `cosh( x )`
+  - `tanh( x )`
+  - `arsinh( x )`
+  - `arcosh( x )`
+  - `artanh( x )`
+
+
 Following classes and functions that are relevant for you:
 
 - ### Classes
   - ### Value
     - ```py
-        Value( best_value: number_as_str|number, error: number_as_str|number [, scale_exponent: int=0 [, precision: int=2 [, id:str ]]] )
+        Value(
+            best_value: number_as_str|number,
+            error: number_as_str|number
+            [, scale_exponent: int=0 ]
+            [, precision: int=2 ]
+            [, id:str ] 
+        )
         ```
     -   | operation        | symbol | example              |
-        | ---------------- |--------| -------------------- |
+        | :--------------: | :----: | -------------------- |
         | negate           | `-`    | `-a`                 |
         | positive         | `+`    | `+a`                 |
         | addition         | `+`    | `a+b` `1+a` `a+1`    |
@@ -28,13 +55,26 @@ Following classes and functions that are relevant for you:
 
   - ### Measurement
     - ```py
-      Measurement( data: Sequence_of_numbers[, scale_exponent: int=0[, precision: int=2 [, id:str ]]])
+      Measurement( 
+          data: Sequence_of_numbers
+          [, scale_exponent: int=0]
+          [, precision: int=2 ]
+          [, id:str ]
+      )
       ```
+  - ### Linear Regression
+    The following classes assume that *only* the `Y`-Component of the (`X`, `Y`)-Point-cloud is *erroneous*.
+
+    - simple linear Regression (all `Y`-Values have the same absolute error)
+      #### TODO: Insert here Regression_linear_simple 
+
+    - *general* linear Regression (`Y`-Values can have different absolute errors)
+      #### TODO: Insert here Regression_linear
 
   - ### PF [optional for advanced use]
     Converting data from one *unit-scale* to an other specific *unit-scale*.
 
-    *PF* employs *Decimal-Prefixes* or *Pre-factors* to denote the magnitude or scale of units( i.e *kilometers* (*km*), *microfarads* (*µF*) etc ).
+    *PF* employs *Decimal-Prefixes* or *Pre-factors* to denote the magnitude or scale of units( i.e *kilometers* (*km*), *microfarad* (*µF*) etc ).
     
     example:
     ```py
@@ -57,35 +97,15 @@ Following classes and functions that are relevant for you:
         | `MEGA`  | `M`   | `E+6 ` |
         | `KILO`  | `k`   | `E+3 ` |
         | `HECTO` | `h`   | `E+2 ` |
-        | `DEKA`  | `da`  | `E+1 ` |
+        | `DECA`  | `da`  | `E+1 ` |
         | `NONE`  | `_`   | `1   ` |
         | `DEZI`  | `d`   | `E-1 ` |
         | `CENTI` | `c`   | `E-2 ` |
         | `MILLI` | `m`   | `E-3 ` |
-        | `MU`    | `µ`   | `E-6 ` |
+        | `MICRO` | `µ`   | `E-6 ` |
         | `NANO`  | `n`   | `E-9 ` |
-        | `PIKO`  | `p`   | `E-12` |
+        | `PICO`  | `p`   | `E-12` |
         | `FEMTO` | `f`   | `E-15` |
-
-- ### Math functions 
-(all trigonometric functions currently only support arguments in `radians`)
-
-argument `x` is of type ` Value | number_as_st | number`. All following functions return a `Value`
-
-  - `exp( x )`
-  - `log( argument [, base:x defaults to Euler-e ] )`
-  - `sin( x )`
-  - `cos( x )`
-  - `tan( x )`
-  - `arcsin( x )`
-  - `arccos( x )`
-  - `arctan( x )`
-  - `sinh( x )`
-  - `cosh( x )`
-  - `tanh( x )`
-  - `arsinh( x )`
-  - `arcosh( x )`
-  - `artanh( x )`
 
 ### Example Code
 ```py
