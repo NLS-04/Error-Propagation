@@ -4,12 +4,16 @@ This Scripts is capable of calculating the *Gaussian Error Propagation* and crea
 
 This was created out of the frustration with the module *Fehlerrechnung* (engl. Error-Propagation) at my university and the ability to reliably cross check my results.
 
-### INFORMATION FOR END USERS 
+### INFORMATION FOR END USERS
+
+Although this library is built around the concept of accepting *all* numeric data types (`float`, `int`, `Decimal`), it is **highly encouraged** to use strings (`str`) to represent numbers. This recommendation stems from the inherent rounding errors associated with floating-point data types. The library performs all calculations using the built-in `decimal` module, ensuring the best accuracy when using string inputs.
+
+In the following documentation `number_like` refers to `Decimal | int | float | str`
 
 - ### Math functions 
 (all trigonometric functions currently only support arguments in `radians`)
 
-argument `x` is of type ` Value | number_as_string | number`. All following functions return a `Value` instance
+argument `x` is of type ` Value | number_like`. All following functions return a `Value` instance
 
   - `exp( x )`
   - `log( argument [, base:x defaults to Euler-e ] )`
@@ -33,8 +37,8 @@ Following classes and functions that are relevant for you:
   - ### Value
     - ```py
         Value(
-            best_value: number_as_str|number,
-            error: number_as_str|number
+            best_value: number_like,
+            error: number_like
             [, scale_exponent: int=0 ]
             [, precision: int=2 ]
             [, id:str ] 
@@ -56,7 +60,7 @@ Following classes and functions that are relevant for you:
   - ### Measurement
     - ```py
       Measurement( 
-          data: Sequence_of_numbers
+          data: Sequence[number_like]
           [, scale_exponent: int=0]
           [, precision: int=2 ]
           [, id:str ]
@@ -66,10 +70,20 @@ Following classes and functions that are relevant for you:
     The following classes assume that *only* the `Y`-Component of the (`X`, `Y`)-Point-cloud is *erroneous*.
 
     - simple linear Regression (all `Y`-Values have the same absolute error)
-      #### TODO: Insert here Regression_linear_simple 
+      ```py
+      Regression_linear_simple(
+        x_data: Sequence[number_like],
+        y_data: Sequence[number_like]
+      )
+      ```
 
     - *general* linear Regression (`Y`-Values can have different absolute errors)
-      #### TODO: Insert here Regression_linear
+      ```py
+      Regression_linear(
+        x_data:Sequence[number_like],
+        y_data:Sequence[Value]
+      )
+      ```
 
   - ### PF [optional for advanced use]
     Converting data from one *unit-scale* to an other specific *unit-scale*.
